@@ -1,0 +1,88 @@
+body {
+  padding: 0;
+  margin: 0;
+  min-height: 100vh;
+  background-color: lightgray;
+}
+
+.app {
+  height: 100vh;
+  
+  .app-body {
+    height: 100%;
+  }
+}
+
+main {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  
+  aside {
+    position: relative;
+    width: 300px;
+    height: 100%;
+    background-color: darkgray;
+    color: black;
+    
+    .Scenario {
+      padding: 10px 20px;
+      border-bottom: 1px solid gray;
+      cursor: pointer;
+      
+      .fa {
+        margin-right: 10px;
+      }
+    }
+    
+    .collapse,
+    .collapsing {
+      background-color: lightgray;
+      padding: 10px;
+      
+      label {
+        font-size: 0.9rem;
+      }
+      
+      section {
+        padding-left: 10px;
+      }
+    }
+    
+    .GetLocation {
+      position: absolute;
+      bottom: 54px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+  }
+
+  .leaflet-container {
+    height: calc(100% - 44px);
+    width: calc(100% - 300px);
+    margin: 0 auto;
+    
+    .PopupTable {
+      border: none;
+      margin-top: 10px;
+      
+      th, tr {
+        vertical-align: middle;
+      }
+      th {
+        padding-right: 20px;
+      }
+    }
+  }
+}
+
+footer {
+  position: absolute;
+  width: 100%;
+  bottom: 0;
+  left: 0;
+  background-color: blue;
+  padding: 10px;
+  color: white;
+  box-sizing: border-box;
+}
