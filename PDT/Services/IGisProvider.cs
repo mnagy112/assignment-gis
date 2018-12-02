@@ -10,7 +10,6 @@ namespace PDT.Services
 		List<Feature> GetCycleWays(Point position, double range);
 		List<Feature> GetNearbyCycleWays(long bicycleStationId);
 		List<Feature> GetAdministrativeBorders();
-		List<Feature> GetAdministrativeBordersFiltered();
 		List<Feature> GetStationsInsideArea(long areaId);
 		List<Feature> GetCycleWaysInsideArea(long areaId);
 		List<Feature> GetStatisticsForAreas();

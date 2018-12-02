@@ -78,6 +78,7 @@ namespace PDT.Entities
         public Dictionary<string, string> Tags { get; set; }
         public Geometry Way { get; set; }
         public long Id { get; set; }
-        public double ComputedArea { get; set; }
+        [Column("way_computed")]
+        public Geometry WayComputed { get; set; }
     }
 }

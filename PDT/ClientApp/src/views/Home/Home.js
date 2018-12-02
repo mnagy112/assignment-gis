@@ -77,8 +77,8 @@ export default class Home extends Component {
     this.fetchStatisticsInArea = this.fetchStatisticsInArea.bind(this);
   }
   
-  loadAdministrativeBorders (filtered) {
-    fetch(`api/BAjkStations/GetAdministrativeBorders${filtered ? "Filtered" : ""}`)
+  loadAdministrativeBorders () {
+    fetch(`api/BAjkStations/GetAdministrativeBorders`)
       .then(response => response.json())
       .then(response => {
         console.log(response);
@@ -137,6 +137,7 @@ export default class Home extends Component {
     fetch(`api/BAjkStations/GetNearbyCycleWays?stationId=${id}&distance=${this.state.distanceFromStation}`)
       .then(response => response.json())
       .then(response => {
+        console.log(response);
         this.setState({
           ...this.state,
           cycleWays: response
@@ -455,12 +456,7 @@ export default class Home extends Component {
           </div>
           <Collapse isOpen={this.state.scenarioSet === 1}>
             <section>
-              <FormGroup check>
-                <Label check>
-                  <Input type="checkbox" value={this.state.useDistanceFromMe} onChange={(e) => this.loadAdministrativeBorders(e.target.checked)}/>{' '}
-                  Display only city parts with bike stations / cycle ways
-                </Label>
-              </FormGroup>
+              Click on city part to show bicycle stations and ways in city part
             </section>
           </Collapse>
           <div className={"Scenario"} onClick={() => this.setScenario(2)}>

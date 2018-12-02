@@ -79,5 +79,7 @@ namespace PDT.Entities
         [Column(TypeName="geometry")]
         public Point Way { get; set; }
         public long Id { get; set; }
+        [Column("way_computed")]
+        public Point WayComputed { get; set; }
     }
 }

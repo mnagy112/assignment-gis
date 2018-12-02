@@ -111,12 +111,6 @@ namespace PDT.Controllers
         }
 
         [HttpGet("[action]")]
-        public ActionResult<FeatureCollection> GetAdministrativeBordersFiltered()
-        {
-            return Ok(new FeatureCollection(gis.GetAdministrativeBordersFiltered()));
-        }
-
-        [HttpGet("[action]")]
         public ActionResult<FeatureCollection> GetAdministrativeBorders()
         {
             return Ok(new FeatureCollection(gis.GetAdministrativeBorders()));

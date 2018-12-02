@@ -16,16 +16,17 @@ namespace PDT.Services
 {
 	public class GisProvider : IGisProvider
 	{
-		private GisDBContext db;
+		private readonly GisDBContext _db;
 
 		public GisProvider(GisDBContext database)
 		{
-			db = database;
+			_db = database;
 		}
 
 		public List<Feature> GetBajkStations(bool slovnaftBAjk, bool whiteBikes, Point position, double range)
 		{
-			return db.PlanetOsmPoint
+			return _db.PlanetOsmPoint
+				.FromSql("SELECT id, ST_TRANSFORM(way, 4326) as way_computed, way, amenity, operator, name, ref from planet_osm_point")
 				.Where(
 					point => (point.Way.Distance(position) <= range * 1000 || range <= -1) &&
 							 point.Amenity == "bicycle_rental" && 
@@ -41,8 +42,8 @@ namespace PDT.Services
 						(
 							new Position
 							(
-								TransformationUtils.GetLatitude(point.Way.Y), 
-								TransformationUtils.GetLongitude(point.Way.X),
+								point.WayComputed.Y, 
+								point.WayComputed.X,
 								null
 							)
 						),
@@ -61,7 +62,8 @@ namespace PDT.Services
 
 		public List<Feature> GetCycleWays(Point position, double range)
 		{
-			return db.PlanetOsmLine
+			return _db.PlanetOsmLine
+				.FromSql("SELECT id, ST_TRANSFORM(way, 4326) as way_computed, way, highway, bicycle from planet_osm_line")
 				.Where(line => 
 					(line.Way.Distance(position) <= range * 1000 || range <= -1) &&
 					line.Highway == "cycleway"
@@ -71,11 +73,11 @@ namespace PDT.Services
 					(
 						new LineString
 						(
-							line.Way.Coordinates
+							line.WayComputed.Coordinates
 								.Select(c => new []
 									{
-										TransformationUtils.GetLongitude(c.X),
-										TransformationUtils.GetLatitude(c.Y)
+										c.X,
+										c.Y
 									}
 								)
 						),
@@ -92,12 +94,13 @@ namespace PDT.Services
 
 		public List<Feature> GetNearbyCycleWays(long bicycleStationId)
 		{
-			return db.PlanetOsmPoint
+			return _db.PlanetOsmPoint
 				.Where(
 					point => point.Id == bicycleStationId
 				)
 				.SelectMany(
-					point => db.PlanetOsmLine
+					point => _db.PlanetOsmLine
+						.FromSql("SELECT id, ST_TRANSFORM(way, 4326) as way_computed, way, highway, bicycle from planet_osm_line")
 						.Where(
 							line => line.Highway == "cycleway" &&
 									line.Way.Distance(point.Way) < 1000
@@ -108,11 +111,11 @@ namespace PDT.Services
 					(
 						new LineString
 						(
-							line.Way.Coordinates
+							line.WayComputed.Coordinates
 								.Select(c => new []
 									{
-										TransformationUtils.GetLongitude(c.X),
-										TransformationUtils.GetLatitude(c.Y)
+										c.X,
+										c.Y
 									}
 								)
 						),
@@ -127,74 +130,10 @@ namespace PDT.Services
 				.ToList();
 		}
 
-		public List<Feature> GetAdministrativeBordersFiltered()
-		{
-			return db.PlanetOsmLine
-				.Where(line => line.Highway == "cycleway")
-				.SelectMany(line =>
-					db.PlanetOsmPoint
-						.Where(point => 
-							point.Amenity == "bicycle_rental" && 
-							(point.Operator == "Slovnaft" || point.Operator == "WhiteBikes") &&
-							point.Operator != null &&
-							point.Name != null
-						)
-						.SelectMany(point => 
-							db.PlanetOsmPolygon
-								.Where(polygon =>
-									polygon.AdminLevel == "9" &&
-									polygon.Boundary == "administrative" &&
-									(polygon.Way.Intersects(line.Way) ||
-									polygon.Way.Contains(point.Way))
-								)
-						)
-				)
-				.GroupBy(polygon => 
-						new
-						{
-							polygon.Way, 
-							polygon.Id, 
-							polygon.Name
-						},
-					(key, group) => new 
-					{
-						key.Way,
-						key.Id,
-						key.Name
-					}
-				)
-				.ToList()
-				.Select(polygon => 
-					new Feature
-					(
-						new Polygon
-						(
-							new []
-							{
-								polygon.Way.Boundary.Coordinates
-									.Select(c => new[]
-										{
-											TransformationUtils.GetLongitude(c.X),
-											TransformationUtils.GetLatitude(c.Y)
-										}
-									)
-									.ToList()
-							}
-						),
-						new Dictionary<string, dynamic>
-						{
-							{"Id", polygon.Id},
-							{"Name", polygon.Name}
-						},
-						null
-					)
-				)
-				.ToList();
-		}
-
 		public List<Feature> GetAdministrativeBorders()
 		{
-			return db.PlanetOsmPolygon
+			return _db.PlanetOsmPolygon
+				.FromSql("SELECT id, ST_TRANSFORM(way, 4326) as way_computed, way, name, admin_level, boundary from planet_osm_polygon")
 				.Where(polygon =>
 					polygon.AdminLevel == "9" &&
 					polygon.Boundary == "administrative"
@@ -206,11 +145,11 @@ namespace PDT.Services
 						(
 							new []
 							{
-								polygon.Way.Boundary.Coordinates
+								polygon.WayComputed.Boundary.Coordinates
 									.Select(c => new[]
 										{
-											TransformationUtils.GetLongitude(c.X),
-											TransformationUtils.GetLatitude(c.Y)
+											c.X,
+											c.Y
 										}
 									)
 									.ToList()
@@ -229,12 +168,13 @@ namespace PDT.Services
 
 		public List<Feature> GetStationsInsideArea(long areaId)
 		{
-			return db.PlanetOsmPolygon
+			return _db.PlanetOsmPolygon
 				.Where(
 					polygon => polygon.Id == areaId
 				)
 				.SelectMany(
-					polygon => db.PlanetOsmPoint
+					polygon => _db.PlanetOsmPoint
+						.FromSql("SELECT id, ST_TRANSFORM(way, 4326) as way_computed, way, amenity, operator, name, ref from planet_osm_point")
 						.Where(point => 
 							point.Amenity == "bicycle_rental" && 
 							(point.Operator == "Slovnaft" || point.Operator == "WhiteBikes") &&
@@ -250,8 +190,8 @@ namespace PDT.Services
 						(
 							new Position
 							(
-								TransformationUtils.GetLatitude(point.Way.Y), 
-								TransformationUtils.GetLongitude(point.Way.X),
+								point.WayComputed.Y, 
+								point.WayComputed.X,
 								null
 							)
 						),
@@ -270,12 +210,13 @@ namespace PDT.Services
 
 		public List<Feature> GetCycleWaysInsideArea(long areaId)
 		{
-			return db.PlanetOsmPolygon
+			return _db.PlanetOsmPolygon
 				.Where(
 					polygon => polygon.Id == areaId
 				)
 				.SelectMany(
-					polygon => db.PlanetOsmLine
+					polygon => _db.PlanetOsmLine
+						.FromSql("SELECT id, ST_TRANSFORM(way, 4326) as way_computed, way, highway, bicycle from planet_osm_line")
 						.Where(line => 
 							line.Highway == "cycleway" &&
 							line.Way.Intersects(polygon.Way)
@@ -286,11 +227,11 @@ namespace PDT.Services
 					(
 						new LineString
 						(
-							line.Way.Coordinates
+							line.WayComputed.Coordinates
 								.Select(c => new []
 									{
-										TransformationUtils.GetLongitude(c.X),
-										TransformationUtils.GetLatitude(c.Y)
+										c.X,
+										c.Y
 									}
 								)
 						),
@@ -307,7 +248,7 @@ namespace PDT.Services
 
 		public List<Feature> GetStatisticsForAreas()
 		{
-			var stations = db.PlanetOsmPoint
+			var stations = _db.PlanetOsmPoint
 				.Where(point =>
 					point.Amenity == "bicycle_rental" &&
 					(point.Operator == "Slovnaft" || point.Operator == "WhiteBikes") &&
@@ -315,7 +256,7 @@ namespace PDT.Services
 					point.Name != null
 				)
 				.SelectMany(point =>
-					db.PlanetOsmPolygon
+					_db.PlanetOsmPolygon
 						.Where(polygon =>
 							polygon.AdminLevel == "9" &&
 							polygon.Boundary == "administrative" &&
@@ -331,12 +272,12 @@ namespace PDT.Services
 				)
 				.ToList();
 			
-			var ways = db.PlanetOsmLine
+			var ways = _db.PlanetOsmLine
 				.Where(line =>
 					line.Highway == "cycleway"
 				)
 				.SelectMany(line =>
-					db.PlanetOsmPolygon
+					_db.PlanetOsmPolygon
 						.Where(polygon =>
 							polygon.AdminLevel == "9" &&
 							polygon.Boundary == "administrative" &&
@@ -352,8 +293,8 @@ namespace PDT.Services
 				)
 				.ToList();
 
-			var polygons = db.PlanetOsmPolygon
-				.FromSql("SELECT id, ST_AREA(ST_TRANSFORM(way, 2249)) as \"ComputedArea\", way, name, admin_level, boundary from planet_osm_polygon")
+			var polygons = _db.PlanetOsmPolygon
+				.FromSql("SELECT id, ST_TRANSFORM(way, 2249) as way_computed, ST_TRANSFORM(way, 4326) as way, name, admin_level, boundary from planet_osm_polygon")
 				.Where(polygon =>
 					polygon.AdminLevel == "9" &&
 					polygon.Boundary == "administrative"
@@ -362,7 +303,7 @@ namespace PDT.Services
 					new PolygonStatistics
 					{
 						Id = polygon.Id,
-						Area = polygon.ComputedArea,
+						Area = polygon.WayComputed.Area,
 						Way = polygon.Way,
 						Name = polygon.Name
 					}
@@ -405,8 +346,8 @@ namespace PDT.Services
 								polygon.Way.Boundary.Coordinates
 									.Select(c => new[]
 										{
-											TransformationUtils.GetLongitude(c.X),
-											TransformationUtils.GetLatitude(c.Y)
+											c.X,
+											c.Y
 										}
 									)
 									.ToList()
