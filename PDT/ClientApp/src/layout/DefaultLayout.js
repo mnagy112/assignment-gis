@@ -26,9 +26,6 @@ class DefaultLayout extends Component {
               </Switch>
           </main>
         </div>
-        <footer>
-          <DefaultFooter />
-        </footer>
       </div>
     );
   }

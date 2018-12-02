@@ -6,6 +6,7 @@ import hash from 'object-hash';
 import 'react-rangeslider/lib/index.css';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+import MapboxLayer from "../MapboxLayer";
 
 delete L.Icon.Default.prototype._getIconUrl;
 
@@ -472,9 +473,13 @@ export default class Home extends Component {
           <Button size={"sm"} className={"GetLocation"} color={"primary"} onClick={this.getMyLocation}>Get my location</Button>
         </aside>
         <Map center={position} zoom={this.state.zoom}>
+          <MapboxLayer
+            accessToken={"pk.eyJ1IjoibW5hZ3kxMTIiLCJhIjoiY2pwNnB1c2dtMDk1azNxczJrdmFseTdzYyJ9.AAcAAqWnr1aWXSQlqhO3qQ"}
+            style="mapbox://styles/mnagy112/cjp6pvcan0qgs2rurymwp5n7o"
+          />
           <TileLayer
             attribution="&amp;copy <a href=&quot;http://osm.org/copyright&quot;>OpenStreetMap</a> contributors"
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            url=""
           />
           {(this.state.showWays || this.state.scenarioSet !== 0) &&
             <GeoJSON key={hash(this.state.cycleWays) + "cycleWay"} data={this.state.cycleWays} style={Home.getLineStyle}/>
