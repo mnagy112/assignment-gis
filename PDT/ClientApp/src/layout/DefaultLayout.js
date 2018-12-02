@@ -4,8 +4,6 @@ import { Redirect, Route, Switch } from 'react-router-dom';
 // routes config
 import routes from '../_routes';
 
-import { DefaultFooter } from './components';
-
 class DefaultLayout extends Component {
 
   render() {

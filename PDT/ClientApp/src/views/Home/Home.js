@@ -471,6 +471,7 @@ export default class Home extends Component {
         <Map center={position} zoom={this.state.zoom}>
           <MapboxLayer
             accessToken={"pk.eyJ1IjoibW5hZ3kxMTIiLCJhIjoiY2pwNnB1c2dtMDk1azNxczJrdmFseTdzYyJ9.AAcAAqWnr1aWXSQlqhO3qQ"}
+            // eslint-disable-next-line
             style="mapbox://styles/mnagy112/cjp6pvcan0qgs2rurymwp5n7o"
           />
           <TileLayer
