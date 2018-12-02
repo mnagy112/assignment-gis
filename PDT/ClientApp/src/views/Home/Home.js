@@ -341,7 +341,7 @@ export default class Home extends Component {
           <tbody>
             <tr>
               <th>Size</th>
-              <td>${area.Size}kMU</td>
+              <td>${area.Size}km<sup>2</sup></td>
             </tr>
             <tr>
               <th>Bicycle stations</th>

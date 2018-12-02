@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using GeoJSON.Net.Feature;
 using GeoJSON.Net.Geometry;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Internal;
 using NetTopologySuite.Geometries;
 using PDT.Entities;
@@ -352,6 +353,7 @@ namespace PDT.Services
 				.ToList();
 
 			var polygons = db.PlanetOsmPolygon
+				.FromSql("SELECT id, ST_AREA(ST_TRANSFORM(way, 2249)) as \"ComputedArea\", way, name, admin_level, boundary from planet_osm_polygon")
 				.Where(polygon =>
 					polygon.AdminLevel == "9" &&
 					polygon.Boundary == "administrative"
@@ -360,7 +362,7 @@ namespace PDT.Services
 					new PolygonStatistics
 					{
 						Id = polygon.Id,
-						Area = polygon.Way.Area,
+						Area = polygon.ComputedArea,
 						Way = polygon.Way,
 						Name = polygon.Name
 					}
@@ -373,7 +375,7 @@ namespace PDT.Services
 					(polygon, station) => new PolygonStatistics
 					{
 						Id = polygon.Id,
-						Area = polygon.Way.Area,
+						Area = polygon.Area,
 						Way = polygon.Way,
 						Name = polygon.Name,
 						StationCount = station.Where(s => s.key == polygon.Id).Select(s => s.Count).FirstOr(0)
@@ -385,7 +387,7 @@ namespace PDT.Services
 					(polygon, way) => new PolygonStatistics
 					{
 						Id = polygon.Id,
-						Area = polygon.Way.Area,
+						Area = polygon.Area,
 						Way = polygon.Way,
 						Name = polygon.Name,
 						StationCount = polygon.StationCount,

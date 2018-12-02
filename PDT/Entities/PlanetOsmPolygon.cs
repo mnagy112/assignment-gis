@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using NetTopologySuite.Geometries;
 
 namespace PDT.Entities
@@ -77,5 +78,6 @@ namespace PDT.Entities
         public Dictionary<string, string> Tags { get; set; }
         public Geometry Way { get; set; }
         public long Id { get; set; }
+        public double ComputedArea { get; set; }
     }
 }
