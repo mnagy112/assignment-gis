@@ -16,12 +16,10 @@ Build a map-based application, which lets the user see geo-based data on a map a
 
 - [Open Street Maps](https://www.openstreetmap.org/)
 
-## My project
+## Pomocník cyklistu
 
-Fill in (either in English, or in Slovak):
+**Application description**: Webová aplikácia slúžiaca pre nájdenie možnosti jednoduchého transportu mestom pomocou služieb bikesharingu. Aplikácia umožňuje vyhľadávanie staníc bikesharingu v celom meste, rovnako ako aj ich filtrovanie na základe poskytovateľa služby či vzdialenosti od aktuálnej pozície. Rovnako je možné v aplikácii vyhľadať cyklistické chodníky rozdelené podľa uspôsobenia pre bicykle, ktoré je možné taktiež filtrovať podľa vzdialenosti od aktuálnej pozície, alebo od pozície stanice bicyklov. Okrem toho je v aplikácii možné vyhľadávať stanice bicyklov nachádzajúce sa v konkrétnej mestskej časti, prípadne zobraziť štatistiku rozloženia staníc bicyklov a cyklotrás v jednotlivých mestských častiach.
 
-**Application description**: `<fill in>`
+**Data source**: Open Street Maps
 
-**Data source**: `<fill in>`
-
-**Technologies used**: `<fill in>`
+**Technologies used**: ASP .NET Core, EntityFramework, NetTopologySuite, GeoJSON.Net, React, Redux, Leaflet.js, Mapbox.js, PostGIS, geoJSON

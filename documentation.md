@@ -1,62 +1,195 @@
-*This is a documentation for a fictional project, just to show you what I expect. Notice a few key properties:*
-- *no cover page, really*
-- *no copy&pasted assignment text*
-- *no code samples*
-- *concise, to the point, gets me a quick overview of what was done and how*
-- *I don't really care about the document length*
-- *I used links where appropriate*
-
 # Overview
 
-This application shows hotels in Bratislava on a map. Most important features are:
-- search by proximity to my current location
-- search by hotel name
-- intelligent ordering - by proximity and by hotel features
-- hotels on the map are color coded by their quality assigned in stars (standard)
+*Vypracoval: Martin Nagy*
 
-This is it in action:
+Aplikácia slúži na zobrazenie staníc s bicyklami bikesharingu spolu s napojením na jedného z poskytovateľov (SlovnaftBAjk) a cyklotrás v Bratislave, ako možnosť jednoduchého, rýchleho a lacného transportu po meste. Aplikácia umožňuje používateľovi nasledujúce:
 
-![Screenshot](screenshot.png)
+- Nastavenie / získanie vlastnej polohy
+- Zobrazenie všetkých staníc bicyklov spolu s informáciou o ich obsadenosti
+- Zobrazenie cyklotrás spolu s informáciou, či sú určené iba pre bicykle
+- Filtrovanie staníc bicyklov
+    - Na základe poskytovateľa (SlovnaftBAjk / WhiteBikes)
+    - Na základe polohy vzhľadom k používateľovej polohe
+- Filtrovanie cyklotrás
+    - Na základe polohy pri staniciach bicyklov
+    - Na základe polohy vzhľadom k používateľovej polohe
+- Zobrazenie staníc bicyklov a cyklotrás nachádzajúcich sa vo zvolenej mestskej časti
+- Zobrazenie štatistiky počtu staníc bicyklov a cyklotrás vo zvolenej mestskej časti
 
-The application has 2 separate parts, the client which is a [frontend web application](#frontend) using mapbox API and mapbox.js and the [backend application](#backend) written in [Rails](http://rubyonrails.org/), backed by PostGIS. The frontend application communicates with backend using a [REST API](#api).
+Zobrazenie všetkých staníc bicyklov spolu s cyklotrasami a informáciami o obsadenosti stanice. Červené stanice sú prázdne / takmer prázdne, žlté sú naplnené z polovice a zelené plné / takmer plné. Zelené cyklotrasy sú určené iba pre bicykle, červené aj pre in prostriedky (cyklotrasy popri cestách)
+
+![Screenshot](screenshots/StationDetail.png)
+
+Zobrazenie cyklotrás a staníc bicyklov v zadanej vzdialenosti od používateľovej polohy
+
+![Screenshot](screenshots/NearbyStations.png)
+
+Zobrazenie staníc bicyklov a cyklotrás v Petržalke
+
+![Screenshot](screenshots/StationsAndWaysInPetrzalka.png)
+
+Zobrazenie štatistiky staníc bicyklov a cyklotrás v Petržalke v porovnaní s rozlohou
+
+![Screenshot](screenshots/StatisticsForPetrzalka.png)
+
+Aplikácia je rozdelená na 2 hlavné časti: [frontend](#frontend) vytvorený pomocou frameworku React s nadstavbou Redux a [backend](#backend) vytvorený v ASP .NET Core, písaný v jazyku C#. Pre uloženie dát bola použitá databáza PostgreSQL s rozšírením PostGIS. Komunikácia medzi frontend a backend časťou aplikácie prebieha pomocou [REST API](#api).
 
 # Frontend
 
-The frontend application is a static HTML page (`index.html`), which shows a mapbox.js widget. It is displaying hotels, which are mostly in cities, thus the map style is based on the Emerald style. I modified the style to better highlight main sightseeing points, restaurants and bus stops, since they are all important when selecting a hotel. I also highlighted rails tracks to assist in finding a quiet location.
+Frontend aplikácie je vytvorený pomocou frameworku React s nadstavbou Redux, spravujúcou dáta prijímané z API. Jedná sa o SPA obsahujúcu jednoduché menu v ľavej časti a mapu vo väčšej časti obrazovky. 
 
-All relevant frontend code is in `application.js` which is referenced from `index.html`. The frontend code is very simple, its only responsibilities are:
-- detecting user's location, using the standard [web location API](https://developer.mozilla.org/en-US/docs/Web/API/Geolocation/Using_geolocation)
-- displaying the sidebar panel with hotel list and filtering controls, driving the user interaction and calling the appropriate backend APIs
-- displaying geo features by overlaying the map with a geojson layer, the geojson is provided directly by backend APIs
+Mapa je vytvorená pomocou knižnice Leaflet.js a jej nadstavby react-leaflet pre jednoduchšie použitie vo frameworku React. Knižnica Leaflet.js sa taktiež stará o zobrazenie GeoJSON dát na mape a následnú interakciu s nimi.
+
+Štýl mapy je vytvorený pomocou [Mapbox](https://www.mapbox.com/) editora, upravením Dark štýlu, ktorý je poskytovaný nástrojom. Štýl je ladený podobne ako aplikácia do tmavej farby so zvýraznením ciest a jemným zvýraznením zelených plôch aby používateľ mohol jednoznačne vidieť zobrazené cyklotrasy a stanice bicyklov.
+
+Hlavná časť aplikácie sa nachádza v `App.js`. Medzi hlavné úlohy aplikácie patrí:
+
+- Získanie polohy používateľa (prípadne jej nastavenie samotným používateľom)
+- Spracovanie akcií používateľa a ich transformácia na REST volania API pomocou natívnej funkcie `fetch`
+- Zobrazenie dát vo formáte GeoJSON v interaktívnej forme na mape
 
 # Backend
 
-The backend application is written in Ruby on Rails and is responsible for querying geo data, formatting the geojson and data for the sidebar panel.
+Backend aplikácie jepísaný v jazyku C#, vo frameworku ASP.NET Core. Pre jednoduchšiu komunikáciu s databázou bol použitý EntityFramework s nadstavbou NetTopologySuite, ktorý umožňuje prácu s priestorovými dátami. Napriek tomu však bolo nutné niektoré transformačné funkcie (napríklad `ST_TRANSFORM`) písať pomocou čistého SQL kódu. GeoJSON formát je vytváraný z objektov typu Feature ktoré sú následne pomocou GeoJSON.NET nuget prekladané do GeoJSON. Pre vytváranie dopytov na databázu bol využitý integrovaný dopytový jazyk LINQ, ktorý bol pri vytváraní požiadaviek prekladaný do SQL.
 
 ## Data
 
-Hotel data is coming directly from Open Street Maps. I downloaded an extent covering whole Slovakia (around 1.2GB) and imported it using the `osm2pgsql` tool into the standard OSM schema in WGS 84 with hstore enabled. To speedup the queries I created an index on geometry column (`way`) in all tables. The application follows standard Rails conventions and all queries are placed in models inside `app/models`, mostly in `app/models/hotel.rb`. GeoJSON is generated by using a standard `st_asgeojson` function, however some postprocessing is necessary (in `app/controllers/search_controller.rb`) in order to merge all hotels into a single geojson.
+Dáta boli stiahnuté z Open Street Maps. Pokrývajú oblasť Bratislavy nakoľko som sa zameral na dopravu v meste. Do databázy boli dáta importované pomocou nástroja `osm2pgsql`. V tabuľkách boli následne vytvorené indexy, ktoré pokrývajú najčastejšie používané kombinácie stĺpcov.
+
+Pre planet_osm_point (body) to je kombinácia stĺpcov `operator` (prevádzkovateľ) a `amenity` (stanica bicykla) a stĺpec `way` označujúci samotný bod.
+
+Pre planet_osm_line (cesty) to sú stĺpce `highway` označujúci typ cesty a `way` označujúci samotnú cestu.
+
+Pre planet_osm_point (oblasti) to je kombinácia stĺpcov `admin_level` (úroveň) a `boundary` (typ oblasti) a stĺpec `way` označujúci samotnú oblasť.
+
+Všetky dáta poskytované ako výstup prostredníctvom API sú vo formáte GeoJSON.
 
 ## Api
 
-**Find hotels in proximity to coordinates**
+V nasledujúcich častiach sa nachádza prehľad endpointov v API, príklady vytvárania dopytov do databázy a príklady odpovede API na požiadavku.
 
-`GET /search?lat=25346&long=46346123`
+### Request
 
-**Find hotels by name, sorted by proximity and quality**
+**Zobrazenie staníc bicyklov s filtrovaním**
 
-`GET /search?name=hviezda&lat=25346&long=46346123`
+`GET /GetStations?lat=48.148598&lon=17.107748&slovnaftBAjk=false&whiteBikes=false&distance=1`
+
+**Zobrazenie cyklotrás s filtrovaním**
+
+`GET /GetCycleWays?lat=48.148598&lon=17.107748&distance=1`
+
+**Zobrazenie cyklotrás v blízkosti konkrétnej stanice bicyklov**
+
+`GET /GetNearbyCycleWays?stationId=19538`
+
+**Zobrazenie častí mesta pre ďalšiu interakciu**
+
+`GET /GetAdministrativeBorders`
+
+**Zobrazenie cyklotrás a staníc bicyklov v konkrétnej časti mesta**
+
+`GET /GetStationsAndWaysInsideArea?areaId=15820`
+
+**Zobrazenie štatistík pre všetky časti mesta**
+
+`GET /GetStatisticsForAreas`
+
+### EntityFramework dopyt na databázu
+
+V dopyte možno vidieť nutnosť využitia čistého SQL pre transformovanie bodu do správnej sústavy.
+
+```c#
+_db.PlanetOsmPoint
+    .FromSql("SELECT id, ST_TRANSFORM(way, 4326) as way_computed, way, amenity, operator, name, ref from planet_osm_point")
+    .Where(
+        point => (point.Way.Distance(position) <= range * 1000 || range <= -1) &&
+                 point.Amenity == "bicycle_rental" && 
+                 (point.Operator == "Slovnaft" || !slovnaftBAjk) &&
+                 (point.Operator == "WhiteBikes" || !whiteBikes) &&
+                 point.Operator != null &&
+                 point.Name != null
+    )
+    .Select(
+        point => new Feature
+        (
+            new GeoJSON.Net.Geometry.Point
+            (
+                new Position
+                (
+                    point.WayComputed.Y, 
+                    point.WayComputed.X,
+                    null
+                )
+            ),
+            new Dictionary<string, dynamic>
+            {
+                {"Id", point.Id},
+                {"Name", point.Name},
+                {"StationId", Convert.ToInt32(point.Ref)},
+                {"Type", point.Operator == "Slovnaft" ? 0 : 1}
+            },
+            null
+        )
+    )
+    .ToList();
+```
+
+### SQL dopyt
+
+Vyššie uvedený príklad LINQ dopytu prevedený do SQL
+
+```sql
+SELECT 
+  ST_Y(point.way_computed),
+  ST_X(point.way_computed),
+  point.id, 
+  point.name, 
+  CAST(point.ref AS integer),
+  CASE
+    WHEN point.operator = 'Slovnaft'
+      THEN 0 
+    ELSE 1
+  END
+FROM (
+  SELECT 
+    id, 
+    ST_TRANSFORM(way, 4326) as way_computed, 
+    way, 
+    amenity, 
+    operator, 
+    name, 
+    ref 
+  FROM planet_osm_point
+) AS point
+WHERE (
+  (
+    (ST_Distance(point.way, @__position_1) <= (@__range_2 * 1000)) AND
+    (point.amenity = 'bicycle_rental')
+  ) AND 
+  point.operator IS NOT NULL) AND 
+  point.name IS NOT NULL
+```
 
 ### Response
 
-API calls return json responses with 2 top-level keys, `hotels` and `geojson`. `hotels` contains an array of hotel data for the sidebar, one entry per matched hotel. Hotel attributes are (mostly self-evident):
-```
+Príklad odpovede API vo formáte GeoJSON
+
+```json
 {
-  "name": "Modra hviezda",
-  "style": "modern", # cuisine style
-  "stars": 3,
-  "address": "Panska 31"
-  "image_url": "/assets/hotels/652.png"
+    "type":"Feature",
+    "geometry":{
+        "type":"Point",
+        "coordinates":[
+            17.1077531,
+            48.106358499912204
+        ]
+    },
+    "properties":{
+        "Id":7417,
+        "Name":"Sintavska / Jantarova cesta",
+        "Size":14,
+        "Ready":3,
+        "Type":0
+    }
 }
 ```
-`geojson` contains a geojson with locations of all matched hotels and style definitions.
