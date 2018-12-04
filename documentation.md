@@ -74,25 +74,116 @@ V nasledujúcich častiach sa nachádza prehľad endpointov v API, príklady vyt
 
 `GET /GetStations?lat=48.148598&lon=17.107748&slovnaftBAjk=false&whiteBikes=false&distance=1`
 
+*SQL Dopyt*
+```sql
+SELECT ST_Y(point.way_computed), ST_X(point.way_computed), point.id, point.name, CAST(point.ref AS integer), CASE
+  WHEN point.operator = 'Slovnaft'
+  THEN 0 ELSE 1
+END
+FROM (
+  SELECT id, ST_TRANSFORM(way, 4326) as way_computed, way, amenity, operator, name, ref from planet_osm_point
+) AS point
+WHERE (((ST_Distance(point.way, @__position_1) <= (@__range_2 * 1000)) AND (point.amenity = 'bicycle_rental')) AND point.operator IS NOT NULL) AND point.name IS NOT NULL
+```
+
 **Zobrazenie cyklotrás s filtrovaním**
 
 `GET /GetCycleWays?lat=48.148598&lon=17.107748&distance=1`
+
+*SQL Dopyt*
+```sql
+SELECT line.way_computed, line.id, CASE
+  WHEN line.bicycle = 'designated'
+  THEN TRUE::bool ELSE FALSE::bool
+END
+FROM (
+  SELECT id, ST_TRANSFORM(way, 4326) as way_computed, way, highway, bicycle from planet_osm_line
+) AS line
+WHERE (ST_Distance(line.way, @__position_1) <= (@__range_2 * 1000)) AND (line.highway = 'cycleway')
+```
 
 **Zobrazenie cyklotrás v blízkosti konkrétnej stanice bicyklov**
 
 `GET /GetNearbyCycleWays?stationId=19538`
 
+*SQL Dopyt*
+```sql
+SELECT line.way_computed, line.id, CASE
+  WHEN line.bicycle = 'designated'
+  THEN TRUE::bool ELSE FALSE::bool
+END
+FROM planet_osm_point AS point
+CROSS JOIN (
+  SELECT id, ST_TRANSFORM(way, 4326) as way_computed, way, highway, bicycle from planet_osm_line
+) AS line
+WHERE (point.id = @__bicycleStationId_0) AND ((line.highway = 'cycleway') AND (ST_Distance(line.way, point.way) < 1000))
+
+```
+
 **Zobrazenie častí mesta pre ďalšiu interakciu**
 
 `GET /GetAdministrativeBorders`
+
+*SQL Dopyt*
+```sql
+SELECT polygon.way_computed, polygon.id, polygon.name
+FROM (
+  SELECT id, ST_TRANSFORM(way, 4326) as way_computed, way, name, admin_level, boundary from planet_osm_polygon
+) AS polygon
+WHERE (polygon.admin_level = '9') AND (polygon.boundary = 'administrative')
+```
 
 **Zobrazenie cyklotrás a staníc bicyklov v konkrétnej časti mesta**
 
 `GET /GetStationsAndWaysInsideArea?areaId=15820`
 
+*SQL Dopyt*
+```sql
+SELECT ST_Y(point.way_computed), ST_X(point.way_computed), point.id, point.name, CAST(point.ref AS integer), CASE
+  WHEN point.operator = 'Slovnaft'
+  THEN 0 ELSE 1
+END
+FROM planet_osm_polygon AS polygon
+CROSS JOIN (
+  SELECT id, ST_TRANSFORM(way, 4326) as way_computed, way, amenity, operator, name, ref from planet_osm_point
+) AS point
+WHERE (polygon.id = @__areaId_0) AND (((((point.amenity = 'bicycle_rental') AND point.operator IN ('Slovnaft', 'WhiteBikes')) AND point.operator IS NOT NULL) AND point.name IS NOT NULL) AND (ST_Within(point.way, polygon.way) = TRUE))
+
+SELECT line.way_computed, line.id, CASE
+  WHEN line.bicycle = 'designated'
+  THEN TRUE::bool ELSE FALSE::bool
+END
+FROM planet_osm_polygon AS polygon
+CROSS JOIN (
+  SELECT id, ST_TRANSFORM(way, 4326) as way_computed, way, highway, bicycle from planet_osm_line
+) AS line
+WHERE (polygon.id = @__areaId_0) AND ((line.highway = 'cycleway') AND (ST_Intersects(line.way, polygon.way) = TRUE))
+```
+
 **Zobrazenie štatistík pre všetky časti mesta**
 
 `GET /GetStatisticsForAreas`
+
+*SQL Dopyt*
+```sql
+SELECT polygon.id AS "Key", COUNT(*)::INT4 AS "Count"
+FROM planet_osm_point AS point
+CROSS JOIN planet_osm_polygon AS polygon
+WHERE ((((point.amenity = 'bicycle_rental') AND point.operator IN ('Slovnaft', 'WhiteBikes')) AND point.operator IS NOT NULL) AND point.name IS NOT NULL) AND (((polygon.admin_level = '9') AND (polygon.boundary = 'administrative')) AND (ST_Contains(polygon.way, point.way) = TRUE))
+GROUP BY polygon.id
+
+SELECT polygon.id AS "Key", COUNT(*)::INT4 AS "Count"
+FROM planet_osm_line AS line
+CROSS JOIN planet_osm_polygon AS polygon
+WHERE (line.highway = 'cycleway') AND (((polygon.admin_level = '9') AND (polygon.boundary = 'administrative')) AND (ST_Intersects(polygon.way, line.way) = TRUE))
+GROUP BY polygon.id
+
+SELECT polygon.id, ST_Area(polygon.way_computed) AS "Area", polygon.way, polygon.name
+FROM (
+  SELECT id, ST_TRANSFORM(way, 2249) as way_computed, ST_TRANSFORM(way, 4326) as way, name, admin_level, boundary from planet_osm_polygon
+) AS polygon
+WHERE (polygon.admin_level = '9') AND (polygon.boundary = 'administrative')
+```
 
 ### EntityFramework dopyt na databázu
 
