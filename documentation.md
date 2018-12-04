@@ -16,7 +16,7 @@ Aplikácia slúži na zobrazenie staníc s bicyklami bikesharingu spolu s napoje
 - Zobrazenie staníc bicyklov a cyklotrás nachádzajúcich sa vo zvolenej mestskej časti
 - Zobrazenie štatistiky počtu staníc bicyklov a cyklotrás vo zvolenej mestskej časti
 
-Zobrazenie všetkých staníc bicyklov spolu s cyklotrasami a informáciami o obsadenosti stanice. Červené stanice sú prázdne / takmer prázdne, žlté sú naplnené z polovice a zelené plné / takmer plné. Zelené cyklotrasy sú určené iba pre bicykle, červené aj pre in prostriedky (cyklotrasy popri cestách)
+Zobrazenie všetkých staníc bicyklov spolu s cyklotrasami a informáciami o obsadenosti stanice. Červené stanice sú prázdne / takmer prázdne, žlté sú naplnené z polovice a zelené plné / takmer plné. Zelené cyklotrasy sú určené iba pre bicykle, červené aj pre iné prostriedky (cyklotrasy popri cestách)
 
 ![Screenshot](screenshots/StationDetail.png)
 
@@ -162,11 +162,12 @@ FROM (
   FROM planet_osm_point
 ) AS point
 WHERE (
-  (
-    (ST_Distance(point.way, @__position_1) <= (@__range_2 * 1000)) AND
-    (point.amenity = 'bicycle_rental')
+    (
+      (ST_Distance(point.way, @__position_1) <= (@__range_2 * 1000)) AND
+      (point.amenity = 'bicycle_rental')
+    ) AND 
+    point.operator IS NOT NULL
   ) AND 
-  point.operator IS NOT NULL) AND 
   point.name IS NOT NULL
 ```
 
